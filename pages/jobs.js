@@ -137,15 +137,17 @@ const Jobs = () => {
               )}
             </motion.div>
           ) : (
-            <div className={viewMode === 'grid' 
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-              : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+            <div className={
+              viewMode === 'grid' 
+                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+                : 'space-y-3'  // List view - vertical stack with spacing
             }>
               {filteredJobs.map((job) => (
                 <JobComponent
                   key={job.id}
                   job={job}
                   onClick={handleJobClick}
+                  viewMode={viewMode}
                 />
               ))}
             </div>
