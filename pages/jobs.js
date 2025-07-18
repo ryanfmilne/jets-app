@@ -8,6 +8,7 @@ import Layout from '../components/Layout';
 import JobComponent from '../components/JobComponent';
 import Toolbar from '../components/Toolbar';
 import AddJobModal from '../components/AddJobModal';
+import JobDetailModal from '../components/JobDetailModal';
 
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -17,6 +18,8 @@ const Jobs = () => {
   const [filterMode, setFilterMode] = useState('all');
   const [sortMode, setSortMode] = useState('newest');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
   const [editingJob, setEditingJob] = useState(null);
   const { isAdmin } = useAuth();
 
@@ -65,12 +68,22 @@ const Jobs = () => {
     setFilteredJobs(filtered);
   }, [jobs, filterMode, sortMode]);
 
+  const handleJobClick = (job) => {
+    setSelectedJob(job);
+    setShowDetailModal(true);
+  };
+
   const handleEditJob = (job) => {
     setEditingJob(job);
     setShowAddModal(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedJob(null);
+  };
+
+  const handleCloseAddModal = () => {
     setShowAddModal(false);
     setEditingJob(null);
   };
@@ -125,14 +138,14 @@ const Jobs = () => {
             </motion.div>
           ) : (
             <div className={viewMode === 'grid' 
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-              : 'space-y-4'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+              : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
             }>
               {filteredJobs.map((job) => (
                 <JobComponent
                   key={job.id}
                   job={job}
-                  onEdit={handleEditJob}
+                  onClick={handleJobClick}
                 />
               ))}
             </div>
@@ -155,8 +168,15 @@ const Jobs = () => {
 
       <AddJobModal
         isOpen={showAddModal}
-        onClose={handleCloseModal}
+        onClose={handleCloseAddModal}
         editJob={editingJob}
+      />
+
+      <JobDetailModal
+        isOpen={showDetailModal}
+        onClose={handleCloseDetailModal}
+        job={selectedJob}
+        onEdit={handleEditJob}
       />
     </Layout>
   );
