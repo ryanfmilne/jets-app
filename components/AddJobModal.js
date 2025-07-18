@@ -30,7 +30,8 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
         setValue('backColor1', editJob.backColor1);
         setValue('backColor2', editJob.backColor2);
         setValue('pressId', editJob.pressId);
-        setValue('notes', editJob.notes || ''); // Add notes field
+        setValue('notes', editJob.notes || '');
+        setValue('plateBin', editJob.plateBin || ''); // Add plate bin field
         if (editJob.imageUrl) {
           setImagePreview(editJob.imageUrl);
         }
@@ -98,7 +99,8 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
         backColor2: data.backColor2 || null,
         pressId: data.pressId || null,
         pressName: selectedPress?.name || null,
-        notes: data.notes || null, // Add notes to job data
+        notes: data.notes || null,
+        plateBin: data.plateBin || 'Waiting on Plates', // Add plate bin with default
         imageUrl,
         status: editJob?.status || 'open',
         createdAt: editJob?.createdAt || new Date(),
@@ -130,6 +132,9 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
     setImagePreview(null);
     onClose();
   };
+
+  // Generate plate bin options (1-24)
+  const plateBinOptions = Array.from({ length: 24 }, (_, i) => i + 1);
 
   return (
     <AnimatePresence>
@@ -215,18 +220,22 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
                     </select>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        {...register('hot')}
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700 flex items-center">
-                        <Flame className="w-4 h-4 mr-1 text-red-500" />
-                        Hot Job (Urgent)
-                      </span>
+                  {/* NEW PLATE BIN FIELD */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Plate Bin
                     </label>
+                    <select
+                      {...register('plateBin')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="">Waiting on Plates</option>
+                      {plateBinOptions.map(number => (
+                        <option key={number} value={number}>
+                          Bin {number}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
@@ -247,6 +256,20 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
                     {errors.frontColor1 && (
                       <p className="mt-1 text-sm text-red-600">{errors.frontColor1.message}</p>
                     )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        {...register('hot')}
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 flex items-center">
+                        <Flame className="w-4 h-4 mr-1 text-red-500" />
+                        Hot Job (Urgent)
+                      </span>
+                    </label>
                   </div>
 
                   <div>
@@ -331,7 +354,6 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
                     </div>
                   </div>
 
-                  {/* NEW NOTES FIELD */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Notes

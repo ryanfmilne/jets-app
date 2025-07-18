@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Flame, Printer, CheckCircle, Edit, Trash2, FileText } from 'lucide-react';
+import { Clock, Flame, Printer, CheckCircle, Edit, Trash2, FileText, Package } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -37,6 +37,14 @@ const JobComponent = ({ job, onEdit, onDelete }) => {
         toast.error('Error deleting job');
       }
     }
+  };
+
+  // Format plate bin display
+  const formatPlateBin = (plateBin) => {
+    if (!plateBin || plateBin === 'Waiting on Plates') {
+      return 'Waiting on Plates';
+    }
+    return `Bin ${plateBin}`;
   };
 
   return (
@@ -124,6 +132,21 @@ const JobComponent = ({ job, onEdit, onDelete }) => {
         </div>
       </div>
 
+      {/* NEW PLATE BIN DISPLAY */}
+      <div className="mb-4">
+        <div className="flex items-center space-x-2 mb-2">
+          <Package className="w-4 h-4 text-gray-600" />
+          <p className="text-sm font-medium text-gray-700">Plate Bin</p>
+        </div>
+        <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+          job.plateBin && job.plateBin !== 'Waiting on Plates'
+            ? 'bg-blue-100 text-blue-800'
+            : 'bg-orange-100 text-orange-800'
+        }`}>
+          {formatPlateBin(job.plateBin)}
+        </span>
+      </div>
+
       {(job.frontColor1 || job.frontColor2 || job.backColor1 || job.backColor2) && (
         <div className="mb-4">
           <p className="text-sm font-medium text-gray-700 mb-2">Colors</p>
@@ -156,7 +179,6 @@ const JobComponent = ({ job, onEdit, onDelete }) => {
         </div>
       )}
 
-      {/* NEW NOTES SECTION */}
       {job.notes && (
         <div className="mb-4 p-3 bg-gray-50 rounded-md border">
           <div className="flex items-center space-x-2 mb-2">
