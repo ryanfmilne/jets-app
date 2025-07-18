@@ -2,25 +2,23 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Mail, Lock, Shield } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { createUserWithEmailAndPassword, signOut, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import { useAuth } from '../lib/auth';
 import { toast } from 'react-hot-toast';
 
 const UserModal = ({ isOpen, onClose, editUser = null }) => {
   const [saving, setSaving] = useState(false);
-  const { user: currentUser } = useAuth(); // Get current admin user
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
   useEffect(() => {
     if (isOpen) {
       if (editUser) {
         // Populate form with existing user data
-        setValue('firstName', editUser.firstName);
-        setValue('lastName', editUser.lastName);
-        setValue('email', editUser.email);
-        setValue('role', editUser.role);
+        setValue('firstName', editUser.firstName || '');
+        setValue('lastName', editUser.lastName || '');
+        setValue('email', editUser.email || '');
+        setValue('role', editUser.role || '');
       } else {
         // Clear form for new user
         reset();
@@ -32,58 +30,70 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
     setSaving(true);
     try {
       if (editUser) {
-        // Update existing user - this should work now
-        await updateDoc(doc(db, 'users', editUser.id), {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email, // Include email even though it can't be changed
+        // Update existing user
+        console.log('Updating user:', editUser.id, data);
+        
+        const userRef = doc(db, 'users', editUser.id);
+        await updateDoc(userRef, {
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
           role: data.role,
           updatedAt: new Date(),
         });
+        
         toast.success('User updated successfully!');
       } else {
-        // Create new user without logging out current admin
+        // Create new user - different approach to avoid logout
+        console.log('Creating new user:', data);
         
-        // Store current admin's credentials
-        const adminEmail = currentUser.email;
-        
-        // Create the new user account
+        // Create user account
         const userCredential = await createUserWithEmailAndPassword(
           auth,
-          data.email,
+          data.email.trim(),
           data.password
         );
         
+        console.log('User created in Auth:', userCredential.user.uid);
+        
         // Add user data to Firestore
         await setDoc(doc(db, 'users', userCredential.user.uid), {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
+          email: data.email.trim(),
           role: data.role,
           createdAt: new Date(),
         });
         
-        // Sign out the newly created user
-        await signOut(auth);
+        console.log('User added to Firestore');
         
-        // Sign the admin back in (this prevents the logout redirect)
-        // Note: You'll need to handle this based on how you want to re-authenticate the admin
-        // For now, we'll let the auth context handle the re-authentication
-        
-        toast.success('User created successfully!');
+        toast.success('User created successfully! You may need to refresh the page.');
       }
 
       handleClose();
     } catch (error) {
       console.error('Error saving user:', error);
-      if (error.code === 'auth/email-already-in-use') {
-        toast.error('Email address is already in use');
-      } else if (error.code === 'auth/weak-password') {
-        toast.error('Password should be at least 6 characters');
-      } else if (error.code === 'auth/invalid-email') {
-        toast.error('Invalid email address');
-      } else {
-        toast.error('Error saving user. Please try again.');
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      
+      // More specific error handling
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          toast.error('Email address is already in use');
+          break;
+        case 'auth/weak-password':
+          toast.error('Password should be at least 6 characters');
+          break;
+        case 'auth/invalid-email':
+          toast.error('Invalid email address');
+          break;
+        case 'permission-denied':
+          toast.error('Permission denied. Check your admin privileges.');
+          break;
+        case 'auth/network-request-failed':
+          toast.error('Network error. Please check your connection.');
+          break;
+        default:
+          toast.error(`Error: ${error.message || 'Please try again'}`);
       }
     } finally {
       setSaving(false);
@@ -233,20 +243,11 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
                     )}
                   </div>
 
-                  {editUser && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                      <p className="text-sm text-blue-800">
-                        <strong>Note:</strong> This updates the user's profile information and role. 
-                        Email changes and password resets must be handled separately.
-                      </p>
-                    </div>
-                  )}
-
                   {!editUser && (
-                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                      <p className="text-sm text-yellow-800">
-                        <strong>Note:</strong> Creating a new user will temporarily sign them in, 
-                        but you'll remain logged in as admin.
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm text-red-800">
+                        <strong>Warning:</strong> Creating a new user will temporarily log you out. 
+                        Simply log back in with your admin credentials to continue.
                       </p>
                     </div>
                   )}
