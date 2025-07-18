@@ -14,7 +14,7 @@ const Jobs = () => {
   const [jobs, setJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState('list'); // Default to list view
   const [filterMode, setFilterMode] = useState('all');
   const [sortMode, setSortMode] = useState('newest');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -22,6 +22,41 @@ const Jobs = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [editingJob, setEditingJob] = useState(null);
   const { isAdmin } = useAuth();
+
+  // Load saved preferences from localStorage on component mount
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem('jobsViewMode');
+    const savedFilterMode = localStorage.getItem('jobsFilterMode');
+    const savedSortMode = localStorage.getItem('jobsSortMode');
+
+    if (savedViewMode) {
+      setViewMode(savedViewMode);
+    }
+    if (savedFilterMode) {
+      setFilterMode(savedFilterMode);
+    }
+    if (savedSortMode) {
+      setSortMode(savedSortMode);
+    }
+  }, []);
+
+  // Save view mode to localStorage whenever it changes
+  const handleViewModeChange = (newViewMode) => {
+    setViewMode(newViewMode);
+    localStorage.setItem('jobsViewMode', newViewMode);
+  };
+
+  // Save filter mode to localStorage whenever it changes
+  const handleFilterModeChange = (newFilterMode) => {
+    setFilterMode(newFilterMode);
+    localStorage.setItem('jobsFilterMode', newFilterMode);
+  };
+
+  // Save sort mode to localStorage whenever it changes
+  const handleSortModeChange = (newSortMode) => {
+    setSortMode(newSortMode);
+    localStorage.setItem('jobsSortMode', newSortMode);
+  };
 
   useEffect(() => {
     const q = query(collection(db, 'jobs'), orderBy('createdAt', 'desc'));
@@ -111,11 +146,11 @@ const Jobs = () => {
 
         <Toolbar
           viewMode={viewMode}
-          onViewModeChange={setViewMode}
+          onViewModeChange={handleViewModeChange}
           filterMode={filterMode}
-          onFilterModeChange={setFilterMode}
+          onFilterModeChange={handleFilterModeChange}
           sortMode={sortMode}
-          onSortModeChange={setSortMode}
+          onSortModeChange={handleSortModeChange}
           jobCount={filteredJobs.length}
         />
 
