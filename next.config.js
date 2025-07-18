@@ -7,6 +7,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Add these for Netlify compatibility
+  trailingSlash: false,
+  output: 'standalone',
+  experimental: {
+    esmExternals: false
+  }
 }
 
 module.exports = nextConfig
