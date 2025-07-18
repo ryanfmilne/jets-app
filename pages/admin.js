@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 import Layout from '../components/Layout';
 import UserModal from '../components/UserModal';
+import UserAvatar from '../components/UserAvatar';
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState('users');
@@ -163,18 +164,21 @@ const Admin = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white p-4 rounded-lg shadow-sm border flex justify-between items-center"
               >
-                <div>
-                  <h3 className="font-semibold text-gray-900">
-                    {user.firstName} {user.lastName}
-                  </h3>
-                  <p className="text-gray-600">{user.email}</p>
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                    user.role === 'admin' 
-                      ? 'bg-purple-100 text-purple-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {user.role}
-                  </span>
+                <div className="flex items-center space-x-4">
+                  <UserAvatar user={user} size="lg" />
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      {user.firstName} {user.lastName}
+                    </h3>
+                    <p className="text-gray-600">{user.email}</p>
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                      user.role === 'admin' 
+                        ? 'bg-purple-100 text-purple-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {user.role}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex space-x-2">
                   <button

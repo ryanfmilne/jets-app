@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Mail, Lock, Shield } from 'lucide-react';
+import { X, User, Mail, Lock, Shield, Camera, Upload } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, auth, storage } from '../lib/firebase';
 import { toast } from 'react-hot-toast';
 
 const UserModal = ({ isOpen, onClose, editUser = null }) => {
   const [saving, setSaving] = useState(false);
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
+
+  // Watch firstName and lastName for initials
+  const firstName = watch('firstName', '');
+  const lastName = watch('lastName', '');
 
   useEffect(() => {
     if (isOpen) {
@@ -19,16 +26,62 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
         setValue('lastName', editUser.lastName || '');
         setValue('email', editUser.email || '');
         setValue('role', editUser.role || '');
+        
+        // Set existing avatar if available
+        if (editUser.avatarUrl) {
+          setImagePreview(editUser.avatarUrl);
+        } else {
+          setImagePreview(null);
+        }
       } else {
         // Clear form for new user
         reset();
+        setImagePreview(null);
+        setImageFile(null);
       }
     }
   }, [isOpen, editUser, setValue, reset]);
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Image size should be less than 2MB');
+        return;
+      }
+
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const generateInitials = (first, last) => {
+    const firstInitial = first?.charAt(0)?.toUpperCase() || '';
+    const lastInitial = last?.charAt(0)?.toUpperCase() || '';
+    return `${firstInitial}${lastInitial}`;
+  };
+
   const onSubmit = async (data) => {
     setSaving(true);
     try {
+      let avatarUrl = editUser?.avatarUrl || null;
+      
+      // Upload avatar image if selected
+      if (imageFile) {
+        const imageRef = ref(storage, `avatars/${Date.now()}-${imageFile.name}`);
+        await uploadBytes(imageRef, imageFile);
+        avatarUrl = await getDownloadURL(imageRef);
+      }
+
       if (editUser) {
         // Update existing user
         console.log('Updating user:', editUser.id, data);
@@ -38,12 +91,13 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
           firstName: data.firstName.trim(),
           lastName: data.lastName.trim(),
           role: data.role,
+          avatarUrl: avatarUrl,
           updatedAt: new Date(),
         });
         
         toast.success('User updated successfully!');
       } else {
-        // Create new user - different approach to avoid logout
+        // Create new user
         console.log('Creating new user:', data);
         
         // Create user account
@@ -61,6 +115,7 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
           lastName: data.lastName.trim(),
           email: data.email.trim(),
           role: data.role,
+          avatarUrl: avatarUrl,
           createdAt: new Date(),
         });
         
@@ -102,6 +157,8 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
 
   const handleClose = () => {
     reset();
+    setImageFile(null);
+    setImagePreview(null);
     onClose();
   };
 
@@ -143,6 +200,52 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
 
               <form onSubmit={handleSubmit(onSubmit)} className="p-6">
                 <div className="space-y-4">
+                  {/* Avatar Upload Section */}
+                  <div className="flex flex-col items-center mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
+                      <Camera className="w-4 h-4 inline mr-1" />
+                      User Avatar
+                    </label>
+                    
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
+                        {imagePreview ? (
+                          <img
+                            src={imagePreview}
+                            alt="User avatar"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-primary-500 flex items-center justify-center">
+                            <span className="text-white text-xl font-semibold">
+                              {generateInitials(firstName, lastName) || '?'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                        id="avatar-upload"
+                      />
+                      
+                      <label
+                        htmlFor="avatar-upload"
+                        className="absolute bottom-0 right-0 bg-primary-500 text-white p-2 rounded-full cursor-pointer hover:bg-primary-600 shadow-lg"
+                      >
+                        <Upload className="w-3 h-3" />
+                      </label>
+                    </div>
+                    
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      Click the upload button to add an image<br />
+                      Max size: 2MB
+                    </p>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">

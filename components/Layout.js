@@ -1,11 +1,15 @@
 import { useAuth } from '../lib/auth';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LogOut, Settings, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import UserAvatar from './UserAvatar';
 
 const Layout = ({ children, requireAuth = true, requireAdmin = false }) => {
   const { user, userRole, loading, logout, isAdmin } = useAuth();
+  const [currentUserData, setCurrentUserData] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -17,6 +21,24 @@ const Layout = ({ children, requireAuth = true, requireAdmin = false }) => {
       }
     }
   }, [user, userRole, loading, router, requireAuth, requireAdmin]);
+
+  // Fetch current user's full data for avatar
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setCurrentUserData(userDoc.data());
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
 
   if (loading) {
     return (
@@ -70,6 +92,26 @@ const Layout = ({ children, requireAuth = true, requireAdmin = false }) => {
                   <LogOut className="w-4 h-4 mr-1" />
                   Logout
                 </button>
+                
+                {/* User Avatar */}
+                <div className="flex items-center space-x-2 ml-2">
+                  <UserAvatar 
+                    user={currentUserData} 
+                    size="md"
+                    className="cursor-pointer hover:ring-2 hover:ring-primary-500 hover:ring-offset-2 transition-all"
+                    title={currentUserData ? `${currentUserData.firstName} ${currentUserData.lastName}` : 'User'}
+                  />
+                  {currentUserData && (
+                    <div className="hidden sm:block">
+                      <p className="text-sm font-medium text-gray-900">
+                        {currentUserData.firstName} {currentUserData.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500 capitalize">
+                        {currentUserData.role}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
