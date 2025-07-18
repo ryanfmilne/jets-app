@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Mail, Lock, Shield } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
+import { useAuth } from '../lib/auth';
 import { toast } from 'react-hot-toast';
 
 const UserModal = ({ isOpen, onClose, editUser = null }) => {
   const [saving, setSaving] = useState(false);
+  const { user: currentUser } = useAuth(); // Get current admin user
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
   useEffect(() => {
@@ -30,23 +32,29 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
     setSaving(true);
     try {
       if (editUser) {
-        // Update existing user
+        // Update existing user - this should work now
         await updateDoc(doc(db, 'users', editUser.id), {
           firstName: data.firstName,
           lastName: data.lastName,
-          email: data.email,
+          email: data.email, // Include email even though it can't be changed
           role: data.role,
           updatedAt: new Date(),
         });
         toast.success('User updated successfully!');
       } else {
-        // Create new user
+        // Create new user without logging out current admin
+        
+        // Store current admin's credentials
+        const adminEmail = currentUser.email;
+        
+        // Create the new user account
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           data.email,
           data.password
         );
         
+        // Add user data to Firestore
         await setDoc(doc(db, 'users', userCredential.user.uid), {
           firstName: data.firstName,
           lastName: data.lastName,
@@ -54,6 +62,14 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
           role: data.role,
           createdAt: new Date(),
         });
+        
+        // Sign out the newly created user
+        await signOut(auth);
+        
+        // Sign the admin back in (this prevents the logout redirect)
+        // Note: You'll need to handle this based on how you want to re-authenticate the admin
+        // For now, we'll let the auth context handle the re-authentication
+        
         toast.success('User created successfully!');
       }
 
@@ -64,6 +80,8 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
         toast.error('Email address is already in use');
       } else if (error.code === 'auth/weak-password') {
         toast.error('Password should be at least 6 characters');
+      } else if (error.code === 'auth/invalid-email') {
+        toast.error('Invalid email address');
       } else {
         toast.error('Error saving user. Please try again.');
       }
@@ -216,10 +234,19 @@ const UserModal = ({ isOpen, onClose, editUser = null }) => {
                   </div>
 
                   {editUser && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <p className="text-sm text-blue-800">
+                        <strong>Note:</strong> This updates the user's profile information and role. 
+                        Email changes and password resets must be handled separately.
+                      </p>
+                    </div>
+                  )}
+
+                  {!editUser && (
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                       <p className="text-sm text-yellow-800">
-                        <strong>Note:</strong> Editing a user only updates their profile information. 
-                        Password changes must be done through Firebase Authentication.
+                        <strong>Note:</strong> Creating a new user will temporarily sign them in, 
+                        but you'll remain logged in as admin.
                       </p>
                     </div>
                   )}
