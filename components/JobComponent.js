@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Flame, Printer, CheckCircle, Edit, Trash2 } from 'lucide-react';
+import { Clock, Flame, Printer, CheckCircle, Edit, Trash2, FileText } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -153,6 +153,17 @@ const JobComponent = ({ job, onEdit, onDelete }) => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* NEW NOTES SECTION */}
+      {job.notes && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-md border">
+          <div className="flex items-center space-x-2 mb-2">
+            <FileText className="w-4 h-4 text-gray-600" />
+            <p className="text-sm font-medium text-gray-700">Notes</p>
+          </div>
+          <p className="text-sm text-gray-600 whitespace-pre-wrap">{job.notes}</p>
         </div>
       )}
 

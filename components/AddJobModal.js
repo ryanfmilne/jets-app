@@ -30,6 +30,7 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
         setValue('backColor1', editJob.backColor1);
         setValue('backColor2', editJob.backColor2);
         setValue('pressId', editJob.pressId);
+        setValue('notes', editJob.notes || ''); // Add notes field
         if (editJob.imageUrl) {
           setImagePreview(editJob.imageUrl);
         }
@@ -97,6 +98,7 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
         backColor2: data.backColor2 || null,
         pressId: data.pressId || null,
         pressName: selectedPress?.name || null,
+        notes: data.notes || null, // Add notes to job data
         imageUrl,
         status: editJob?.status || 'open',
         createdAt: editJob?.createdAt || new Date(),
@@ -327,6 +329,19 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {/* NEW NOTES FIELD */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes
+                    </label>
+                    <textarea
+                      {...register('notes')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="Add any special instructions or notes for this job..."
+                      rows="3"
+                    />
                   </div>
                 </div>
 
