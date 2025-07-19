@@ -22,6 +22,23 @@ const PressView = ({ isOpen, onClose, jobs }) => {
     }
   }, [isOpen]);
 
+  // Apply Priority First sorting to jobs
+  const sortJobsByPriority = (jobsArray) => {
+    return [...jobsArray].sort((a, b) => {
+      const aDate = a.createdAt?.toDate() || new Date(0);
+      const bDate = b.createdAt?.toDate() || new Date(0);
+      
+      // Priority sorting: Hot jobs first, then oldest within each group
+      
+      // If one is hot and the other isn't, hot job comes first
+      if (a.hot && !b.hot) return -1;
+      if (!a.hot && b.hot) return 1;
+      
+      // If both are hot or both are not hot, sort by oldest first
+      return aDate - bDate;
+    });
+  };
+
   // Group jobs by press
   const groupJobsByPress = () => {
     const grouped = {};
@@ -48,6 +65,11 @@ const PressView = ({ isOpen, onClose, jobs }) => {
         }
         grouped['unassigned'].jobs.push(job);
       }
+    });
+
+    // Apply Priority First sorting to each press's jobs
+    Object.keys(grouped).forEach(pressId => {
+      grouped[pressId].jobs = sortJobsByPriority(grouped[pressId].jobs);
     });
 
     return Object.values(grouped);
@@ -84,7 +106,7 @@ const PressView = ({ isOpen, onClose, jobs }) => {
       <div className="bg-gray-900 text-white py-6 px-8">
         <h1 className="text-4xl font-bold text-center">Press Status Board</h1>
         <p className="text-center text-gray-300 mt-2 text-lg">
-          Real-time job assignments by press
+          Real-time job assignments by press • Priority First sorting
         </p>
       </div>
 
