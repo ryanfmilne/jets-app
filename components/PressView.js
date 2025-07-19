@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Flame, CheckCircle, Clock, Package } from 'lucide-react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const PressView = ({ isOpen, onClose, jobs }) => {
   const [presses, setPresses] = useState([]);
+  const [settings, setSettings] = useState({});
 
   useEffect(() => {
     if (isOpen) {
@@ -17,6 +18,23 @@ const PressView = ({ isOpen, onClose, jobs }) => {
         }));
         setPresses(pressesData);
       });
+
+      // Load settings
+      const loadSettings = async () => {
+        try {
+          const settingsDoc = await getDoc(doc(db, 'settings', 'app'));
+          if (settingsDoc.exists()) {
+            setSettings(settingsDoc.data());
+          } else {
+            setSettings({ showPressImagesInPressView: false });
+          }
+        } catch (error) {
+          console.error('Error loading settings:', error);
+          setSettings({ showPressImagesInPressView: false });
+        }
+      };
+
+      loadSettings();
 
       return unsubscribe;
     }
@@ -82,6 +100,43 @@ const PressView = ({ isOpen, onClose, jobs }) => {
     return `Bin ${plateBin}`;
   };
 
+  // Get background style for press header
+  const getPressHeaderStyle = (press) => {
+    const showImages = settings.showPressImagesInPressView;
+    const hasImage = press.imageUrl;
+    const isUnassigned = press.id === 'unassigned';
+
+    if (!showImages || isUnassigned) {
+      // Default solid colors
+      return {
+        background: isUnassigned ? '#4B5563' : '#2563EB' // gray-600 or primary-600
+      };
+    }
+
+    if (hasImage) {
+      // Press image with gradient overlay
+      return {
+        backgroundImage: `
+          linear-gradient(135deg, 
+            rgba(0, 0, 0, 0.85) 0%, 
+            rgba(0, 0, 0, 0.65) 40%, 
+            rgba(0, 0, 0, 0.25) 70%, 
+            rgba(0, 0, 0, 0.1) 100%
+          ),
+          url(${press.imageUrl})
+        `,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      };
+    } else {
+      // Fallback to black if no image
+      return {
+        background: '#000000'
+      };
+    }
+  };
+
   const pressGroups = groupJobsByPress();
 
   if (!isOpen) return null;
@@ -125,30 +180,34 @@ const PressView = ({ isOpen, onClose, jobs }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-lg shadow-lg flex flex-col min-h-0"
+              className="bg-white rounded-lg shadow-lg flex flex-col min-h-0 overflow-hidden"
             >
-              {/* Press Header */}
-              <div className={`p-6 rounded-t-lg ${
-                group.press.id === 'unassigned' 
-                  ? 'bg-gray-600' 
-                  : 'bg-primary-600'
-              } text-white`}>
-                <h2 className="text-2xl font-bold mb-2">{group.press.name}</h2>
-                <p className="text-sm opacity-90 leading-relaxed">
-                  {group.press.description}
-                </p>
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    {group.jobs.length} Job{group.jobs.length !== 1 ? 's' : ''}
-                  </span>
-                  {group.jobs.filter(job => job.hot).length > 0 && (
-                    <div className="flex items-center text-red-200">
-                      <Flame className="w-4 h-4 mr-1" />
-                      <span className="text-sm">
-                        {group.jobs.filter(job => job.hot).length} Hot
-                      </span>
-                    </div>
-                  )}
+              {/* Press Header with Background Image */}
+              <div 
+                className="p-6 rounded-t-lg text-white relative"
+                style={getPressHeaderStyle(group.press)}
+              >
+                {/* Content overlay to ensure text is always readable */}
+                <div className="relative z-10">
+                  <h2 className="text-2xl font-bold mb-2 text-white drop-shadow-lg">
+                    {group.press.name}
+                  </h2>
+                  <p className="text-sm opacity-90 leading-relaxed text-white drop-shadow">
+                    {group.press.description}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-sm font-medium text-white drop-shadow">
+                      {group.jobs.length} Job{group.jobs.length !== 1 ? 's' : ''}
+                    </span>
+                    {group.jobs.filter(job => job.hot).length > 0 && (
+                      <div className="flex items-center text-red-200">
+                        <Flame className="w-4 h-4 mr-1 drop-shadow" />
+                        <span className="text-sm drop-shadow">
+                          {group.jobs.filter(job => job.hot).length} Hot
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

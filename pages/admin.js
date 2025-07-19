@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Palette, Printer, Plus, Edit, Trash2 } from 'lucide-react';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { Users, Palette, Printer, Plus, Edit, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
@@ -15,6 +15,7 @@ const Admin = () => {
   const [users, setUsers] = useState([]);
   const [colors, setColors] = useState([]);
   const [presses, setPresses] = useState([]);
+  const [settings, setSettings] = useState({});
   const [showAddForm, setShowAddForm] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showPressModal, setShowPressModal] = useState(false);
@@ -52,6 +53,31 @@ const Admin = () => {
       setPresses(pressesData);
     });
 
+    // Load settings
+    const loadSettings = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'app'));
+        if (settingsDoc.exists()) {
+          setSettings(settingsDoc.data());
+        } else {
+          // Create default settings if none exist
+          const defaultSettings = {
+            showPressImagesInPressView: false,
+          };
+          await setDoc(doc(db, 'settings', 'app'), defaultSettings);
+          setSettings(defaultSettings);
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        // Set default settings on error
+        setSettings({
+          showPressImagesInPressView: false,
+        });
+      }
+    };
+
+    loadSettings();
+
     return () => {
       unsubUsers();
       unsubColors();
@@ -68,7 +94,7 @@ const Admin = () => {
       // Open press modal for new press
       setEditingPress(null);
       setShowPressModal(true);
-    } else {
+    } else if (activeTab === 'colors') {
       // Show inline form for colors only
       setEditingItem(null);
       setShowAddForm(true);
@@ -116,6 +142,22 @@ const Admin = () => {
   const handleClosePressModal = () => {
     setShowPressModal(false);
     setEditingPress(null);
+  };
+
+  const handleSettingChange = async (settingKey, value) => {
+    try {
+      const updatedSettings = {
+        ...settings,
+        [settingKey]: value,
+      };
+      
+      await setDoc(doc(db, 'settings', 'app'), updatedSettings);
+      setSettings(updatedSettings);
+      toast.success('Setting updated successfully');
+    } catch (error) {
+      console.error('Error updating setting:', error);
+      toast.error('Error updating setting');
+    }
   };
 
   const onSubmit = async (data) => {
@@ -283,6 +325,40 @@ const Admin = () => {
           </div>
         );
 
+      case 'settings':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Press View Settings</h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">Show Press Images in Press View</h4>
+                    <p className="text-sm text-gray-500">
+                      When enabled, press images will be used as background images in the Press View with a gradient overlay for better text readability.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.showPressImagesInPressView || false}
+                      onChange={(e) => handleSettingChange('showPressImagesInPressView', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Future Settings</h3>
+              <p className="text-gray-500">Additional admin settings will be added here in future updates.</p>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -363,13 +439,15 @@ const Admin = () => {
           className="flex justify-between items-center"
         >
           <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
-          <button
-            onClick={handleAdd}
-            className="bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add {activeTab.slice(0, -1)}
-          </button>
+          {activeTab !== 'settings' && (
+            <button
+              onClick={handleAdd}
+              className="bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 flex items-center"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add {activeTab.slice(0, -1)}
+            </button>
+          )}
         </motion.div>
 
         <div className="bg-white rounded-lg shadow-sm">
@@ -379,6 +457,7 @@ const Admin = () => {
                 { id: 'users', label: 'Users', icon: Users },
                 { id: 'colors', label: 'Colors', icon: Palette },
                 { id: 'presses', label: 'Presses', icon: Printer },
+                { id: 'settings', label: 'Settings', icon: SettingsIcon },
               ].map((tab) => {
                 const Icon = tab.icon;
                 return (
