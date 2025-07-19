@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 import Layout from '../components/Layout';
 import UserModal from '../components/UserModal';
+import PressModal from '../components/PressModal';
 import UserAvatar from '../components/UserAvatar';
 
 const Admin = () => {
@@ -16,8 +17,10 @@ const Admin = () => {
   const [presses, setPresses] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [showPressModal, setShowPressModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
+  const [editingPress, setEditingPress] = useState(null);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
@@ -61,8 +64,12 @@ const Admin = () => {
       // Open user modal for new user
       setEditingUser(null);
       setShowUserModal(true);
+    } else if (activeTab === 'presses') {
+      // Open press modal for new press
+      setEditingPress(null);
+      setShowPressModal(true);
     } else {
-      // Show inline form for colors/presses
+      // Show inline form for colors only
       setEditingItem(null);
       setShowAddForm(true);
       reset();
@@ -74,17 +81,18 @@ const Admin = () => {
       // Open user modal for editing
       setEditingUser(item);
       setShowUserModal(true);
+    } else if (activeTab === 'presses') {
+      // Open press modal for editing
+      setEditingPress(item);
+      setShowPressModal(true);
     } else {
-      // Show inline form for colors/presses
+      // Show inline form for colors only
       setEditingItem(item);
       setShowAddForm(true);
       
       if (activeTab === 'colors') {
         setValue('name', item.name);
         setValue('hex', item.hex);
-      } else if (activeTab === 'presses') {
-        setValue('name', item.name);
-        setValue('description', item.description);
       }
     }
   };
@@ -105,6 +113,11 @@ const Admin = () => {
     setEditingUser(null);
   };
 
+  const handleClosePressModal = () => {
+    setShowPressModal(false);
+    setEditingPress(null);
+  };
+
   const onSubmit = async (data) => {
     try {
       if (activeTab === 'colors') {
@@ -123,23 +136,6 @@ const Admin = () => {
             createdAt: new Date(),
           });
           toast.success('Color added successfully');
-        }
-      } else if (activeTab === 'presses') {
-        const pressData = {
-          name: data.name,
-          description: data.description,
-          updatedAt: new Date(),
-        };
-
-        if (editingItem) {
-          await updateDoc(doc(db, 'presses', editingItem.id), pressData);
-          toast.success('Press updated successfully');
-        } else {
-          await addDoc(collection(db, 'presses'), {
-            ...pressData,
-            createdAt: new Date(),
-          });
-          toast.success('Press added successfully');
         }
       }
 
@@ -248,9 +244,25 @@ const Admin = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white p-4 rounded-lg shadow-sm border flex justify-between items-center"
               >
-                <div>
-                  <h3 className="font-semibold text-gray-900">{press.name}</h3>
-                  <p className="text-gray-600">{press.description}</p>
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-12 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
+                    {press.imageUrl ? (
+                      <img
+                        src={press.imageUrl}
+                        alt={press.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Printer className="w-6 h-6 text-gray-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{press.name}</h3>
+                    <p className="text-gray-600">{press.description}</p>
+                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                      {press.pressType || 'Jet Press'}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex space-x-2">
                   <button
@@ -277,7 +289,7 @@ const Admin = () => {
   };
 
   const renderAddForm = () => {
-    if (!showAddForm || activeTab === 'users') return null;
+    if (!showAddForm || activeTab !== 'colors') return null;
 
     return (
       <motion.div
@@ -286,71 +298,37 @@ const Admin = () => {
         className="bg-white p-6 rounded-lg shadow-sm border mb-6"
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          {editingItem ? `Edit ${activeTab.slice(0, -1)}` : `Add New ${activeTab.slice(0, -1)}`}
+          {editingItem ? 'Edit Color' : 'Add New Color'}
         </h3>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {activeTab === 'colors' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Color Name
-                </label>
-                <input
-                  {...register('name', { required: 'Color name is required' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Red"
-                />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Color Name
+            </label>
+            <input
+              {...register('name', { required: 'Color name is required' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="Red"
+            />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            )}
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hex Color
-                </label>
-                <input
-                  type="color"
-                  {...register('hex', { required: 'Hex color is required' })}
-                  className="w-full h-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                {errors.hex && (
-                  <p className="mt-1 text-sm text-red-600">{errors.hex.message}</p>
-                )}
-              </div>
-            </>
-          )}
-
-          {activeTab === 'presses' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Press Name
-                </label>
-                <input
-                  {...register('name', { required: 'Press name is required' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Press 1"
-                />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  {...register('description')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Description of the press"
-                  rows="3"
-                />
-              </div>
-            </>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Hex Color
+            </label>
+            <input
+              type="color"
+              {...register('hex', { required: 'Hex color is required' })}
+              className="w-full h-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            {errors.hex && (
+              <p className="mt-1 text-sm text-red-600">{errors.hex.message}</p>
+            )}
+          </div>
 
           <div className="flex justify-end space-x-4">
             <button
@@ -432,6 +410,12 @@ const Admin = () => {
         isOpen={showUserModal}
         onClose={handleCloseUserModal}
         editUser={editingUser}
+      />
+
+      <PressModal
+        isOpen={showPressModal}
+        onClose={handleClosePressModal}
+        editPress={editingPress}
       />
     </Layout>
   );
