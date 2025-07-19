@@ -57,7 +57,7 @@ const PressView = ({ isOpen, onClose, jobs }) => {
     });
   };
 
-  // Group jobs by press
+  // Group jobs by press and sort presses alphabetically
   const groupJobsByPress = () => {
     const grouped = {};
     
@@ -90,7 +90,20 @@ const PressView = ({ isOpen, onClose, jobs }) => {
       grouped[pressId].jobs = sortJobsByPriority(grouped[pressId].jobs);
     });
 
-    return Object.values(grouped);
+    // Convert to array and sort presses alphabetically by name
+    const pressGroups = Object.values(grouped);
+    
+    return pressGroups.sort((a, b) => {
+      // Always put "Unassigned" column at the end
+      if (a.press.id === 'unassigned') return 1;
+      if (b.press.id === 'unassigned') return -1;
+      
+      // Sort all other presses alphabetically by name
+      return a.press.name.localeCompare(b.press.name, undefined, { 
+        sensitivity: 'base',
+        numeric: true 
+      });
+    });
   };
 
   const formatPlateBin = (plateBin) => {
