@@ -3,121 +3,74 @@ import { Flame, CheckCircle, Clock, Printer } from 'lucide-react';
 
 const JobComponent = ({ job, onClick, viewMode = 'grid' }) => {
   if (viewMode === 'list') {
-    // List View Layout - Horizontal
+    // List View Layout - Simplified for mobile
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         onClick={() => onClick(job)}
-        className={`bg-white rounded-lg shadow-md p-4 border-l-4 cursor-pointer hover:shadow-lg transition-shadow ${
+        className={`bg-white rounded-lg shadow-md p-4 border-l-4 cursor-pointer hover:shadow-lg transition-shadow relative ${
           job.hot ? 'border-red-500' : 'border-gray-300'
         } ${job.status === 'completed' ? 'opacity-75' : ''}`}
       >
-        <div className="flex items-center space-x-6">
+        {/* Status Badge - Absolute positioned top right */}
+        <div className="absolute top-0 right-0">
+          <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-bl-lg rounded-tr-lg ${
+            job.status === 'completed' 
+              ? 'bg-green-500 text-white' 
+              : job.status === 'in-progress'
+              ? 'bg-yellow-500 text-white'
+              : 'bg-gray-500 text-white'
+          }`}>
+            {job.status}
+          </span>
+        </div>
+
+        {/* Mobile Layout - Simplified */}
+        <div className="flex items-center space-x-4 pr-16"> {/* Add right padding for status badge */}
           {/* Image */}
           <div className="flex-shrink-0">
             {job.imageUrl ? (
               <img
                 src={job.imageUrl}
                 alt={job.title}
-                className="w-20 h-20 object-cover rounded-md"
+                className="w-16 h-16 object-cover rounded-md"
               />
             ) : (
-              <div className="w-20 h-20 bg-gray-100 rounded-md flex items-center justify-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center">
                 <span className="text-gray-400 text-xs">No Image</span>
               </div>
             )}
           </div>
 
-          {/* Job Info */}
+          {/* Job Info - Simplified */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2 mb-1">
+            <div className="flex items-center space-x-2 mb-2">
               <h3 className="text-lg font-semibold text-gray-900 truncate">{job.title}</h3>
               {job.hot && (
                 <motion.div
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ repeat: Infinity, duration: 1 }}
                 >
-                  <Flame className="w-4 h-4 text-red-500" />
+                  <Flame className="w-4 h-4 text-red-500 flex-shrink-0" />
                 </motion.div>
               )}
               {job.status === 'completed' && (
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
               )}
             </div>
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span className="flex items-center">
+
+            {/* Simplified Info Row */}
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center">
                 <Clock className="w-3 h-3 mr-1" />
-                {new Date(job.createdAt?.toDate()).toLocaleDateString()}
-              </span>
-              <span className="flex items-center">
-                <Printer className="w-3 h-3 mr-1" />
-                {job.pressName || 'No Press'}
-              </span>
+                <span>{new Date(job.createdAt?.toDate()).toLocaleDateString()}</span>
+              </div>
+              <div className="font-bold text-lg text-gray-900">
+                Qty: {job.quantity}
+              </div>
             </div>
-          </div>
-
-          {/* Quantity */}
-          <div className="flex-shrink-0 text-center">
-            <p className="text-sm text-gray-600">Qty</p>
-            <p className="text-xl font-bold text-gray-900">{job.quantity}</p>
-          </div>
-
-          {/* Colors */}
-          <div className="flex-shrink-0">
-            {(job.frontColor1 || job.frontColor2 || job.backColor1 || job.backColor2) ? (
-              <div>
-                <p className="text-sm text-gray-600 mb-1 text-center">Colors</p>
-                <div className="flex space-x-1">
-                  {job.frontColor1 && (
-                    <div 
-                      className="w-6 h-6 rounded border-2 border-gray-300" 
-                      style={{ backgroundColor: job.frontColor1 }}
-                      title="Front Color 1"
-                    ></div>
-                  )}
-                  {job.frontColor2 && (
-                    <div 
-                      className="w-6 h-6 rounded border-2 border-gray-300" 
-                      style={{ backgroundColor: job.frontColor2 }}
-                      title="Front Color 2"
-                    ></div>
-                  )}
-                  {job.backColor1 && (
-                    <div 
-                      className="w-6 h-6 rounded border-2 border-gray-300" 
-                      style={{ backgroundColor: job.backColor1 }}
-                      title="Back Color 1"
-                    ></div>
-                  )}
-                  {job.backColor2 && (
-                    <div 
-                      className="w-6 h-6 rounded border-2 border-gray-300" 
-                      style={{ backgroundColor: job.backColor2 }}
-                      title="Back Color 2"
-                    ></div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="w-24"> {/* Placeholder to maintain spacing */}
-                <p className="text-sm text-gray-400 text-center">No Colors</p>
-              </div>
-            )}
-          </div>
-
-          {/* Status */}
-          <div className="flex-shrink-0">
-            <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${
-              job.status === 'completed' 
-                ? 'bg-green-100 text-green-800' 
-                : job.status === 'in-progress'
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              {job.status}
-            </span>
           </div>
         </div>
       </motion.div>
