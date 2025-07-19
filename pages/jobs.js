@@ -17,7 +17,7 @@ const Jobs = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list'); // Default to list view
   const [filterMode, setFilterMode] = useState('all');
-  const [sortMode, setSortMode] = useState('newest');
+  const [sortMode, setSortMode] = useState('priority'); // Default to priority sorting
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPressView, setShowPressView] = useState(false);
@@ -39,6 +39,9 @@ const Jobs = () => {
     }
     if (savedSortMode) {
       setSortMode(savedSortMode);
+    } else {
+      // Set default to priority if no saved preference
+      setSortMode('priority');
     }
   }, []);
 
@@ -107,9 +110,19 @@ const Jobs = () => {
       const aDate = a.createdAt?.toDate() || new Date(0);
       const bDate = b.createdAt?.toDate() || new Date(0);
       
-      if (sortMode === 'newest') {
+      if (sortMode === 'priority') {
+        // Priority sorting: Hot jobs first, then oldest within each group
+        
+        // If one is hot and the other isn't, hot job comes first
+        if (a.hot && !b.hot) return -1;
+        if (!a.hot && b.hot) return 1;
+        
+        // If both are hot or both are not hot, sort by oldest first
+        return aDate - bDate;
+      } else if (sortMode === 'newest') {
         return bDate - aDate;
       } else {
+        // oldest first
         return aDate - bDate;
       }
     });

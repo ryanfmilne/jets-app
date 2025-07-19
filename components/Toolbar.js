@@ -81,6 +81,7 @@ const Toolbar = ({
               onChange={(e) => onSortModeChange(e.target.value)}
               className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
+              <option value="priority">Priority First</option>
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
             </select>
