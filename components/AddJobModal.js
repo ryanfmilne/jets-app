@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Flame } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { collection, addDoc, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
+import { useAuth } from '../lib/auth';
 import { toast } from 'react-hot-toast';
 
 const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
@@ -13,8 +14,30 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
   const [uploading, setUploading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [currentUserData, setCurrentUserData] = useState(null);
+  const { user } = useAuth();
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
+
+  // Fetch current user's data for job creation
+  useEffect(() => {
+    const fetchCurrentUserData = async () => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setCurrentUserData(userDoc.data());
+          }
+        } catch (error) {
+          console.error('Error fetching current user data:', error);
+        }
+      }
+    };
+
+    if (user) {
+      fetchCurrentUserData();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (isOpen) {
@@ -31,7 +54,7 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
         setValue('backColor2', editJob.backColor2);
         setValue('pressId', editJob.pressId);
         setValue('notes', editJob.notes || '');
-        setValue('plateBin', editJob.plateBin || ''); // Add plate bin field
+        setValue('plateBin', editJob.plateBin || '');
         if (editJob.imageUrl) {
           setImagePreview(editJob.imageUrl);
         }
@@ -100,15 +123,27 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
         pressId: data.pressId || null,
         pressName: selectedPress?.name || null,
         notes: data.notes || null,
-        plateBin: data.plateBin || 'Waiting on Plates', // Add plate bin with default
+        plateBin: data.plateBin || 'Waiting on Plates',
         imageUrl,
         status: editJob?.status || 'open',
         createdAt: editJob?.createdAt || new Date(),
         updatedAt: new Date(),
       };
 
+      // Add creator information for new jobs
+      if (!editJob && currentUserData) {
+        jobData.createdBy = {
+          uid: user.uid,
+          firstName: currentUserData.firstName,
+          lastName: currentUserData.lastName,
+          email: currentUserData.email,
+          role: currentUserData.role,
+          avatarUrl: currentUserData.avatarUrl || null,
+        };
+      }
+
       if (editJob) {
-        // Update existing job
+        // Update existing job (preserve original creator info)
         await updateDoc(doc(db, 'jobs', editJob.id), jobData);
         toast.success('Job updated successfully!');
       } else {
@@ -220,7 +255,6 @@ const AddJobModal = ({ isOpen, onClose, editJob = null }) => {
                     </select>
                   </div>
 
-                  {/* NEW PLATE BIN FIELD */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Plate Bin

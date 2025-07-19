@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, Flame, Printer, CheckCircle, Edit, Trash2, FileText, Package } from 'lucide-react';
+import { X, Clock, Flame, Printer, CheckCircle, Edit, Trash2, FileText, Package, User } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { toast } from 'react-hot-toast';
+import UserAvatar from './UserAvatar';
 
 const JobDetailModal = ({ isOpen, onClose, job, onEdit }) => {
   const { isAdmin } = useAuth();
@@ -123,6 +124,31 @@ const JobDetailModal = ({ isOpen, onClose, job, onEdit }) => {
 
               {/* Content */}
               <div className="p-6">
+                {/* Job Creator Information */}
+                {job.createdBy && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <User className="w-4 h-4 text-gray-600" />
+                      <h3 className="text-sm font-medium text-gray-700">Created By</h3>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <UserAvatar 
+                        user={job.createdBy} 
+                        size="md"
+                        showBorder={true}
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {job.createdBy.firstName} {job.createdBy.lastName}
+                        </p>
+                        <p className="text-xs text-gray-500 capitalize">
+                          {job.createdBy.role}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Job Info */}
                 <div className="flex items-center space-x-6 text-sm text-gray-600 mb-6">
                   <span className="flex items-center">
