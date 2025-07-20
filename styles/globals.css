@@ -12,6 +12,47 @@ body {
   background-color: #f9fafb;
 }
 
+/* Performance optimizations for mobile animations */
+* {
+  /* Enable hardware acceleration for better performance */
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  -o-transform: translateZ(0);
+  transform: translateZ(0);
+
+  /* Optimize for animations */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-perspective: 1000;
+  perspective: 1000;
+}
+
+/* Smooth transitions - shorter duration for mobile */
+* {
+  transition: all 0.15s ease-out;
+}
+
+/* Mobile-specific animation optimizations */
+@media (max-width: 768px) {
+  * {
+    /* Faster transitions on mobile for better perceived performance */
+    transition-duration: 0.1s;
+  }
+
+  /* Optimize modals and overlays for mobile */
+  .modal-overlay {
+    will-change: opacity;
+    transform: translateZ(0);
+  }
+
+  .modal-content {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -36,7 +77,54 @@ body {
   outline-offset: 2px;
 }
 
-/* Smooth transitions */
-* {
-  transition: all 0.2s ease-in-out;
+/* Framer Motion optimization classes */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Prevent layout shift during animations */
+.prevent-scroll {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Smooth modal animations */
+.modal-backdrop {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* Touch optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices */
+  button:hover,
+  a:hover {
+    background-color: initial;
+    color: initial;
+  }
+
+  /* Add active states for better touch feedback */
+  button:active,
+  a:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease-out;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

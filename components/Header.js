@@ -181,7 +181,7 @@ const Header = () => {
       </motion.header>
 
       {/* Mobile Menu Overlay */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isMobileMenuOpen && (
           <>
             {/* Backdrop */}
@@ -189,21 +189,49 @@ const Header = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ 
+                duration: 0.2,
+                ease: "easeOut"
+              }}
               className="fixed inset-0 bg-gray-600 bg-opacity-50 z-40 md:hidden"
               onClick={() => setIsMobileMenuOpen(false)}
             />
 
             {/* Mobile Menu Panel */}
             <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-50 md:hidden"
+              initial={{ 
+                x: "100%",
+                opacity: 0
+              }}
+              animate={{ 
+                x: 0,
+                opacity: 1
+              }}
+              exit={{ 
+                x: "100%",
+                opacity: 0
+              }}
+              transition={{ 
+                type: "tween",
+                duration: 0.25,
+                ease: [0.25, 0.46, 0.45, 0.94] // Custom easing for smoothness
+              }}
+              className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-50 md:hidden will-change-transform"
+              style={{
+                // Hardware acceleration for smooth animations
+                transform: 'translateZ(0)',
+                backfaceVisibility: 'hidden',
+                perspective: 1000
+              }}
             >
               <div className="flex flex-col h-full">
                 {/* Mobile Menu Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <motion.div 
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1, duration: 0.2 }}
+                  className="flex items-center justify-between p-6 border-b border-gray-200"
+                >
                   <div className="flex items-center space-x-3">
                     <UserAvatar user={currentUserData} size="lg" />
                     <div>
@@ -223,11 +251,11 @@ const Header = () => {
                   </div>
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100"
+                    className="p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100 transition-colors"
                   >
                     <X className="w-6 h-6" />
                   </button>
-                </div>
+                </motion.div>
 
                 {/* Mobile Menu Items */}
                 <nav className="flex-1 px-6 py-4">
@@ -239,11 +267,15 @@ const Header = () => {
                         return (
                           <motion.button
                             key={item.label}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
+                            initial={{ x: 50, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ 
+                              delay: 0.1 + (index * 0.05),
+                              duration: 0.2,
+                              ease: "easeOut"
+                            }}
                             onClick={item.onClick}
-                            className={`w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left font-medium transition-colors ${
+                            className={`w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left font-medium transition-all duration-200 ${
                               item.className || 'text-gray-700 hover:text-primary-600 hover:bg-primary-50'
                             }`}
                           >
@@ -256,12 +288,17 @@ const Header = () => {
                 </nav>
 
                 {/* Mobile Menu Footer */}
-                <div className="p-6 border-t border-gray-200">
+                <motion.div 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.2 }}
+                  className="p-6 border-t border-gray-200"
+                >
                   <div className="text-center">
                     <p className="text-sm text-gray-500">PrintQueue</p>
                     <p className="text-xs text-gray-400">Print Management System</p>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </motion.div>
           </>
